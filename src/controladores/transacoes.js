@@ -1,18 +1,51 @@
 
-const {knex} = require('../bancodedados/conexao');
+const {knex, query} = require('../bancodedados/conexao');
 
 const { cadastrarTransacaoSchema, atualizarTransacaoSchema } = require('../validacoes/transacaoSchema');
 
 
 
 const listarTransacoes = async (req, res) => {
-    const {id} = req.usuario;
+    const {usuario} = req;
+
+    const {filtro} = req.query;
     
+    if(filtro && !Array.isArray(filtro)){
+        return res.status(400).json({mensagem: 'O filtro precisa ser um array'})
+    }
 
     try {
-        const transacoes = await knex('transacoes').where({'usuario_id': id}).returning('*');
 
-        return res.json(transacoes);
+        let queryLike = '';
+        let arrayFiltro;
+        
+        if (filtro) {
+
+            arrayFiltro += filtro.map((item) => `%${item}%`);
+
+        
+            queryLike += `and c.descricao ilike any($2)`;
+            
+        }
+        
+        const queryTransacoes = `
+            select t.*, c.descricao as categoria_nome from transacoes t
+            left join categorias c
+            on t.categoria_id = c.id
+            where t.usuario_id = $1
+            ${queryLike}
+        `        
+        const paramFiltro = filtro ? [usuario.id, arrayFiltro] : [usuario.id];
+        const transacoes = await query(queryTransacoes, paramFiltro);
+        return res.json(transacoes.rows);
+        
+
+        // else {
+            
+        //     const transacoes1 = await knex('transacoes').where({'usuario_id': usuario.id}).returning('*');
+    
+        //     return res.json(transacoes1);
+        // }
 
     } catch (error) {
         return res.status(500).json({ mensagem: `Erro interno: ${error.message}` });
