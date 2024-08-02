@@ -26,7 +26,7 @@ const login = async (req, res) => {
 
         const token = jwt.sign({ id: usuario.id }, process.env.SENHA_JWT, { expiresIn: '2h' });
 
-        const { senha: _, dadosUsuario } = usuario;
+        const { senha: _, ...dadosUsuario } = usuario;
 
         return res.status(200).json({
             usuario: dadosUsuario,
@@ -40,4 +40,4 @@ const login = async (req, res) => {
 }
 
 
-module.exports = { login}
+module.exports = { login }
